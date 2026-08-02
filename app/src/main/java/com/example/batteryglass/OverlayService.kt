@@ -44,7 +44,6 @@ class OverlayService : Service() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         overlayView = BatteryOverlayView(this)
 
-        // 1. Gestione tipo di Overlay per compatibilità API
         val layoutType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
         } else {
@@ -64,7 +63,6 @@ class OverlayService : Service() {
         )
         params.gravity = Gravity.TOP or Gravity.START
 
-        // 2. Gestione corretta della Notch / Display Cutout (API 28+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             params.layoutInDisplayCutoutMode =
                 WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
@@ -72,7 +70,6 @@ class OverlayService : Service() {
 
         windowManager.addView(overlayView, params)
 
-        // 3. Registrazione dei BroadcastReceiver sicura per Android 13+ (API 33)
         val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(batteryReceiver, filter, Context.RECEIVER_EXPORTED)
@@ -86,10 +83,20 @@ class OverlayService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         intent?.let {
             val stroke = it.getFloatExtra("STROKE_WIDTH", 12f)
+            val padding = it.getFloatExtra("EDGE_PADDING", 0f)
             val anim = it.getBooleanExtra("ANIM_ENABLED", true)
+            val wave = it.getBooleanExtra("WAVE_ENABLED", true)
+            val pulse = it.getBooleanExtra("PULSE_ENABLED", true)
+            val hideFull = it.getBooleanExtra("HIDE_FULL", false)
+            val paletteOrdinal = it.getIntExtra("PALETTE", 0)
 
             overlayView.strokeWidthPx = stroke
+            overlayView.edgePaddingPx = padding
             overlayView.animEnabled = anim
+            overlayView.waveEnabled = wave
+            overlayView.lowBatteryPulseEnabled = pulse
+            overlayView.hideOnFullEnabled = hideFull
+            overlayView.palette = BatteryOverlayView.Palette.values()[paletteOrdinal]
         }
         return START_STICKY
     }
