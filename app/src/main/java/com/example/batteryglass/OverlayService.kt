@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.PixelFormat
 import android.os.BatteryManager
+import android.os.Build
 import android.os.IBinder
 import android.view.Gravity
 import android.view.WindowManager
@@ -25,7 +26,7 @@ class OverlayService : Service() {
             intent?.let {
                 val level = it.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
                 val scale = it.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
-                val pct = (level * 100 / scale.toFloat()).toInt()
+                val pct = if (scale > 0) (level * 100 / scale.toFloat()).toInt() else 100
 
                 val status = it.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
                 val charging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
@@ -43,10 +44,18 @@ class OverlayService : Service() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         overlayView = BatteryOverlayView(this)
 
+        // 1. Gestione tipo di Overlay per compatibilità API
+        val layoutType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+        } else {
+            @Suppress("DEPRECATION")
+            WindowManager.LayoutParams.TYPE_PHONE
+        }
+
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            layoutType,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                     WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
                     WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
@@ -55,10 +64,21 @@ class OverlayService : Service() {
         )
         params.gravity = Gravity.TOP or Gravity.START
 
+        // 2. Gestione corretta della Notch / Display Cutout (API 28+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            params.layoutInDisplayCutoutMode =
+                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        }
+
         windowManager.addView(overlayView, params)
 
+        // 3. Registrazione dei BroadcastReceiver sicura per Android 13+ (API 33)
         val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
-        registerReceiver(batteryReceiver, filter)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(batteryReceiver, filter, Context.RECEIVER_EXPORTED)
+        } else {
+            registerReceiver(batteryReceiver, filter)
+        }
 
         startForeground(1, createNotification())
     }
