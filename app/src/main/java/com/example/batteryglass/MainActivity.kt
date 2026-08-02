@@ -20,7 +20,7 @@ class MainActivity : AppCompatActivity() {
 
     private var isServiceRunning = false
 
-    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
@@ -38,7 +38,7 @@ class MainActivity : AppCompatActivity() {
         val switchHideFull = findViewById<SwitchMaterial>(R.id.switchHideFull)
         val btnToggleService = findViewById<Button>(R.id.btnToggleService)
 
-        var currentThickness = prefs.getFloat("stroke_width", 12f)
+        var currentThickness = prefs.getFloat("stroke_width", 1f)
         var currentPadding = prefs.getFloat("edge_padding", 0f)
         var currentPalette = prefs.getInt("palette", 0)
         var animEnabled = prefs.getBoolean("anim_enabled", true)
@@ -46,7 +46,7 @@ class MainActivity : AppCompatActivity() {
         var pulseEnabled = prefs.getBoolean("pulse_enabled", true)
         var hideFullEnabled = prefs.getBoolean("hide_full_enabled", false)
 
-        val palettes = arrayOf("Classico (Verde/Giallo/Rosso)", "Minimal Monocromatico", "Cyberpunk Neon", "Pastello Soft")
+        val palettes = arrayOf("Classico (Spettro 50 Sfumature)", "Minimal Monocromatico", "Cyberpunk Neon", "Pastello Soft")
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, palettes)
         spinnerPalette.adapter = adapter
         spinnerPalette.setSelection(currentPalette)
@@ -81,7 +81,7 @@ class MainActivity : AppCompatActivity() {
 
         sbThickness.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                val value = progress.coerceAtLeast(2)
+                val value = progress.coerceAtLeast(1) // Permette lo spessore fino a 1 pixel/dp
                 tvThickness.text = "Spessore linea: $value dp"
                 currentThickness = value.toFloat()
                 prefs.edit().putFloat("stroke_width", currentThickness).apply()
@@ -148,7 +148,7 @@ class MainActivity : AppCompatActivity() {
         val density = resources.displayMetrics.density
         val prefs = getSharedPreferences("battery_glass_prefs", Context.MODE_PRIVATE)
         val intent = Intent(this, OverlayService::class.java).apply {
-            putExtra("STROKE_WIDTH", prefs.getFloat("stroke_width", 12f) * density)
+            putExtra("STROKE_WIDTH", prefs.getFloat("stroke_width", 1f) * density)
             putExtra("EDGE_PADDING", prefs.getFloat("edge_padding", 0f) * density)
             putExtra("PALETTE", prefs.getInt("palette", 0))
             putExtra("ANIM_ENABLED", prefs.getBoolean("anim_enabled", true))
