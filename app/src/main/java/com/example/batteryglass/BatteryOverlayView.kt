@@ -1,6 +1,5 @@
 package com.example.batteryglass
 
-import android.animation.ArgbEvaluator
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
@@ -11,9 +10,15 @@ import android.view.animation.LinearInterpolator
 
 class BatteryOverlayView(context: Context) : View(context) {
 
-    private val paintLeft = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val paintRight = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val evaluator = ArgbEvaluator()
+    // Paint dichiarati a livello di classe e riutilizzati
+    private val paintLeft = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeCap = Paint.Cap.ROUND
+    }
+    private val paintRight = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeCap = Paint.Cap.ROUND
+    }
 
     var batteryLevel: Int = 100
         set(value) {
@@ -55,25 +60,26 @@ class BatteryOverlayView(context: Context) : View(context) {
     private var animator: ValueAnimator? = null
 
     init {
-        paintLeft.style = Paint.Style.STROKE
-        paintLeft.strokeCap = Paint.Cap.ROUND
-
-        paintRight.style = Paint.Style.STROKE
-        paintRight.strokeCap = Paint.Cap.ROUND
-
         strokeWidthPx = 12f
+    }
+
+    // Interpolazione matematica RGB ad altissime prestazioni (senza creare oggetti ArgbEvaluator)
+    private fun blendColor(startColor: Int, endColor: Int, fraction: Float): Int {
+        val f = fraction.coerceIn(0f, 1f)
+        val r = (Color.red(startColor) + f * (Color.red(endColor) - Color.red(startColor))).toInt()
+        val g = (Color.green(startColor) + f * (Color.green(endColor) - Color.green(startColor))).toInt()
+        val b = (Color.blue(startColor) + f * (Color.blue(endColor) - Color.blue(startColor))).toInt()
+        return Color.rgb(r, g, b)
     }
 
     private fun getBatteryColor(level: Int): Int {
         val fraction = level / 100f
         return if (fraction <= 0.5f) {
             // Da Rosso (0%) a Giallo (50%)
-            val subFraction = fraction / 0.5f
-            evaluator.evaluate(subFraction, Color.RED, Color.YELLOW) as Int
+            blendColor(Color.RED, Color.YELLOW, fraction / 0.5f)
         } else {
             // Da Giallo (50%) a Verde (100%)
-            val subFraction = (fraction - 0.5f) / 0.5f
-            evaluator.evaluate(subFraction, Color.YELLOW, Color.GREEN) as Int
+            blendColor(Color.YELLOW, Color.GREEN, (fraction - 0.5f) / 0.5f)
         }
     }
 
@@ -116,10 +122,10 @@ class BatteryOverlayView(context: Context) : View(context) {
 
         val offset = strokeWidthPx / 2f
 
-        // Linea sinistra (Parete bicchiere SX)
+        // Parete sinistra del bicchiere
         canvas.drawLine(offset, startY, offset, stopY, paintLeft)
 
-        // Linea destra (Parete bicchiere DX)
+        // Parete destra del bicchiere
         canvas.drawLine(width - offset, startY, width - offset, stopY, paintRight)
     }
 }
