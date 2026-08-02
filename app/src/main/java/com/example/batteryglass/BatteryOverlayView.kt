@@ -12,7 +12,6 @@ import kotlin.math.sin
 
 class BatteryOverlayView(context: Context) : View(context) {
 
-    // Palette Colori
     enum class Palette { CLASSIC, MINIMAL, CYBERPUNK, PASTEL }
 
     var palette: Palette = Palette.CLASSIC
@@ -54,7 +53,7 @@ class BatteryOverlayView(context: Context) : View(context) {
             invalidate()
         }
 
-    var strokeWidthPx: Float = 12f
+    var strokeWidthPx: Float = 1f
         set(value) {
             field = value
             paintLeft.strokeWidth = value
@@ -85,7 +84,7 @@ class BatteryOverlayView(context: Context) : View(context) {
             invalidate()
         }
 
-    // Oggetti di disegno riciclati (Zero allocazioni in onDraw)
+    // Paint e Path riciclati per massima efficienza
     private val paintLeft = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeCap = Paint.Cap.ROUND
@@ -97,6 +96,9 @@ class BatteryOverlayView(context: Context) : View(context) {
     private val wavePathLeft = Path()
     private val wavePathRight = Path()
 
+    // Array HSV riciclato per evitare allocazioni in onDraw
+    private val hsvArray = floatArrayOf(0f, 1f, 1f)
+
     private var pulseAlpha: Int = 255
     private var lowBatteryAlpha: Int = 255
     private var wavePhase: Float = 0f
@@ -106,7 +108,7 @@ class BatteryOverlayView(context: Context) : View(context) {
     private var waveAnimator: ValueAnimator? = null
 
     init {
-        strokeWidthPx = 12f
+        strokeWidthPx = 1f
         startWaveAnimation()
     }
 
@@ -127,14 +129,20 @@ class BatteryOverlayView(context: Context) : View(context) {
     }
 
     private fun getBatteryColor(level: Int): Int {
-        val fraction = level / 100f
+        // Calcolo a 50 sfumature discrete (1 cambio di sfumatura ogni 2 punti percentuale)
+        val stepLevel = (level / 2) * 2
+        val fraction = stepLevel / 100f
+
         return when (palette) {
             Palette.CLASSIC -> {
-                if (fraction <= 0.5f) blendColor(Color.RED, Color.YELLOW, fraction / 0.5f)
-                else blendColor(Color.YELLOW, Color.GREEN, (fraction - 0.5f) / 0.5f)
+                // Tonalità spettrale HSV espressiva: da 120° (Verde) a 0° (Rosso)
+                hsvArray[0] = 120f * fraction
+                hsvArray[1] = 0.95f // Saturazione ricca
+                hsvArray[2] = 1.0f  // Luminosità massima
+                Color.HSVToColor(hsvArray)
             }
             Palette.MINIMAL -> {
-                blendColor(Color.parseColor("#444444"), Color.WHITE, fraction)
+                blendColor(Color.parseColor("#333333"), Color.WHITE, fraction)
             }
             Palette.CYBERPUNK -> {
                 if (fraction <= 0.5f) blendColor(Color.parseColor("#FF007F"), Color.parseColor("#8A2BE2"), fraction / 0.5f)
@@ -212,7 +220,6 @@ class BatteryOverlayView(context: Context) : View(context) {
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
-        // Opzione: Nascondi se al 100% e non in carica
         if (hideOnFullEnabled && batteryLevel == 100 && !isCharging) {
             return
         }
@@ -237,8 +244,7 @@ class BatteryOverlayView(context: Context) : View(context) {
         val xRight = width - (strokeWidthPx / 2f) - edgePaddingPx
 
         if (waveEnabled && fillHeight > 10f) {
-            // Effetto Onda Liquida sulla superficie superiore
-            val waveAmplitude = 8f
+            val waveAmplitude = (strokeWidthPx * 0.5f).coerceAtLeast(4f)
             
             wavePathLeft.reset()
             wavePathLeft.moveTo(xLeft, startY)
@@ -261,7 +267,6 @@ class BatteryOverlayView(context: Context) : View(context) {
             canvas.drawPath(wavePathRight, paintRight)
 
         } else {
-            // Linee diritte standard
             canvas.drawLine(xLeft, startY, xLeft, stopY, paintLeft)
             canvas.drawLine(xRight, startY, xRight, stopY, paintRight)
         }
