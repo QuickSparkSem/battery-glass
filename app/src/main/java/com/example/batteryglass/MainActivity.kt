@@ -20,8 +20,8 @@ class MainActivity : AppCompatActivity() {
 
     private var isServiceRunning = false
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate()
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+        super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         val prefs = getSharedPreferences("battery_glass_prefs", Context.MODE_PRIVATE)
