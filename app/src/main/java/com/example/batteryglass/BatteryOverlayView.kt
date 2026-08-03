@@ -23,7 +23,10 @@ class BatteryOverlayView(context: Context) : View(context) {
     var userAlpha: Int = 255
         set(value) { field = value; invalidate() }
 
-    var showTop: Boolean = true; var showLeft: Boolean = true; var showRight: Boolean = true
+    var showTop: Boolean = true
+    var showLeft: Boolean = true
+    var showRight: Boolean = true
+    var topBarMode: Int = 0 // 0=L->R, 1=R->L, 2=Center->Out, 3=BlackHole
 
     var waveEnabled: Boolean = true
         set(value) {
@@ -128,7 +131,6 @@ class BatteryOverlayView(context: Context) : View(context) {
         var currentAlpha = if (isCharging && animEnabled) pulseAlpha else 255
         if (batteryLevel <= 15 && !isCharging && lowBatteryPulseEnabled) currentAlpha = lowBatteryAlpha
         
-        // Applica trasparenza utente in cascata
         val finalAlpha = (currentAlpha * (userAlpha / 255f)).toInt().coerceIn(0, 255)
 
         paintLeft.color = currentColor; paintLeft.alpha = finalAlpha
@@ -137,11 +139,12 @@ class BatteryOverlayView(context: Context) : View(context) {
 
         val h = height.toFloat(); val w = width.toFloat()
         val fillHeight = h * (batteryLevel / 100f)
-        val fillWidth = w * (batteryLevel / 100f)
         val startY = h; val stopY = h - fillHeight
         val xLeft = (strokeWidthPx / 2f) + edgePaddingPx
         val xRight = width - (strokeWidthPx / 2f) - edgePaddingPx
-        val topY = (strokeWidthPx / 2f) + edgePaddingPx
+        
+        // La barra superiore è incollata FISICAMENTE al soffitto estremo (ignorando l'edgePadding)
+        val topY = strokeWidthPx / 2f 
 
         val waveAmplitude = (strokeWidthPx * 0.4f).coerceAtLeast(2f)
 
@@ -173,19 +176,43 @@ class BatteryOverlayView(context: Context) : View(context) {
             } else canvas.drawLine(xRight, startY, xRight, stopY, paintRight)
         }
 
-        // Disegna Barra Superiore
+        // Disegna Barra Superiore (Sopra la status bar, logica di disegno dei frammenti)
         if (showTop) {
-            val stopX = xLeft + (xRight - xLeft) * (batteryLevel / 100f)
-            if (waveEnabled && stopX - xLeft > 10f) {
-                wavePathTop.reset(); wavePathTop.moveTo(xLeft, topY)
-                var x = xLeft
-                while (x <= stopX) {
-                    val liquidWobble = sin(x * 0.015f + wavePhase * 1.2f) * 0.6f + sin(x * 0.03f - wavePhase * 0.8f) * 0.4f
-                    wavePathTop.lineTo(x, topY + (liquidWobble * waveAmplitude))
-                    x += 10f
+            val totalW = xRight - xLeft
+            val pct = batteryLevel / 100f
+            val centerX = xLeft + totalW / 2f
+
+            // Funzione di utilità per disegnare un segmento con o senza effetto liquido
+            fun drawTopSegment(startX: Float, stopX: Float) {
+                if (stopX - startX < 1f) return
+                if (waveEnabled && (stopX - startX) > 10f) {
+                    wavePathTop.reset(); wavePathTop.moveTo(startX, topY)
+                    var x = startX
+                    while (x <= stopX) {
+                        val liquidWobble = sin(x * 0.015f + wavePhase * 1.2f) * 0.6f + sin(x * 0.03f - wavePhase * 0.8f) * 0.4f
+                        wavePathTop.lineTo(x, topY + (liquidWobble * waveAmplitude))
+                        x += 10f
+                    }
+                    wavePathTop.lineTo(stopX, topY) // Assicura che chiuda esattamente
+                    canvas.drawPath(wavePathTop, paintTop)
+                } else {
+                    canvas.drawLine(startX, topY, stopX, topY, paintTop)
                 }
-                canvas.drawPath(wavePathTop, paintTop)
-            } else canvas.drawLine(xLeft, topY, stopX, topY, paintTop)
+            }
+
+            when (topBarMode) {
+                0 -> drawTopSegment(xLeft, xLeft + totalW * pct) // L -> R
+                1 -> drawTopSegment(xRight - totalW * pct, xRight) // R -> L
+                2 -> { // Centro -> Esterni
+                    val halfW = (totalW * pct) / 2f
+                    drawTopSegment(centerX - halfW, centerX + halfW)
+                }
+                3 -> { // Buco Nero (Erosione dal centro/notch verso l'esterno)
+                    val emptyHalfW = (totalW * (1f - pct)) / 2f
+                    drawTopSegment(xLeft, centerX - emptyHalfW) // Linea di sinistra
+                    drawTopSegment(centerX + emptyHalfW, xRight) // Linea di destra
+                }
+            }
         }
     }
 }
