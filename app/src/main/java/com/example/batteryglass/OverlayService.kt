@@ -17,8 +17,8 @@ import androidx.core.app.NotificationCompat
 
 class OverlayService : Service() {
 
-    private lateinit windowManager: WindowManager
-    private lateinit batteryView: BatteryOverlayView
+    private lateinit var windowManager: WindowManager
+    private lateinit var batteryView: BatteryOverlayView
     private val CHANNEL_ID = "BatteryGlassOverlayChannel"
 
     private val batteryReceiver = object : BroadcastReceiver() {
@@ -50,7 +50,7 @@ class OverlayService : Service() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         batteryView = BatteryOverlayView(this)
 
-        // I FLAG PIÙ IMPORTANTI: FLAG_NOT_TOUCHABLE e FLAG_NOT_FOCUSABLE rendono l'app 100% passiva ai tocchi
+        // FLAG_NOT_TOUCHABLE e FLAG_NOT_FOCUSABLE rendono l'app 100% passiva ai tocchi
         val layoutParams = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
@@ -78,7 +78,7 @@ class OverlayService : Service() {
             batteryView.lowBatteryPulseEnabled = it.getBooleanExtra("PULSE_ENABLED", true)
             batteryView.hideOnFullEnabled = it.getBooleanExtra("HIDE_FULL", false)
             
-            // Nuovi extra per Alpha e interruttori barre
+            // Extra per Trasparenza e barre attive
             batteryView.userAlpha = it.getIntExtra("ALPHA", 255)
             batteryView.showTop = it.getBooleanExtra("SHOW_TOP", true)
             batteryView.showLeft = it.getBooleanExtra("SHOW_LEFT", true)
