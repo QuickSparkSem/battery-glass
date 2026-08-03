@@ -50,7 +50,6 @@ class OverlayService : Service() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         batteryView = BatteryOverlayView(this)
 
-        // FLAG_NOT_TOUCHABLE e FLAG_NOT_FOCUSABLE rendono l'app 100% passiva ai tocchi
         val layoutParams = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
@@ -63,6 +62,11 @@ class OverlayService : Service() {
                     or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         )
+
+        // Questo flag è FONDAMENTALE per permettere all'app di disegnare DENTRO/SOPRA l'area del notch
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            layoutParams.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        }
 
         windowManager.addView(batteryView, layoutParams)
         registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
@@ -78,9 +82,9 @@ class OverlayService : Service() {
             batteryView.lowBatteryPulseEnabled = it.getBooleanExtra("PULSE_ENABLED", true)
             batteryView.hideOnFullEnabled = it.getBooleanExtra("HIDE_FULL", false)
             
-            // Extra per Trasparenza e barre attive
             batteryView.userAlpha = it.getIntExtra("ALPHA", 255)
             batteryView.showTop = it.getBooleanExtra("SHOW_TOP", true)
+            batteryView.topBarMode = it.getIntExtra("TOP_BAR_MODE", 0)
             batteryView.showLeft = it.getBooleanExtra("SHOW_LEFT", true)
             batteryView.showRight = it.getBooleanExtra("SHOW_RIGHT", true)
         }
