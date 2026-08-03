@@ -58,7 +58,7 @@
             android:id="@+id/tvPadding"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Distanza dai bordi: 0 dp" />
+            android:text="Distanza dai bordi laterali: 0 dp" />
         <SeekBar
             android:id="@+id/sbPadding"
             android:layout_width="match_parent"
@@ -70,7 +70,20 @@
             android:id="@+id/switchTopBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Mostra Barra Superiore (Status Bar)" />
+            android:text="Mostra Barra Superiore" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Stile Barra Superiore:"
+            android:textSize="12sp" />
+
+        <Spinner
+            android:id="@+id/spinnerTopMode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp" />
 
         <com.google.android.material.switchmaterial.SwitchMaterial
             android:id="@+id/switchLeftBar"
