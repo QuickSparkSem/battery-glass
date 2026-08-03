@@ -12,91 +12,77 @@ import android.graphics.PixelFormat
 import android.os.BatteryManager
 import android.os.Build
 import android.os.IBinder
-import android.view.Gravity
 import android.view.WindowManager
 import androidx.core.app.NotificationCompat
 
 class OverlayService : Service() {
 
-    private lateinit var windowManager: WindowManager
-    private lateinit var overlayView: BatteryOverlayView
+    private lateinit windowManager: WindowManager
+    private lateinit batteryView: BatteryOverlayView
+    private val CHANNEL_ID = "BatteryGlassOverlayChannel"
 
     private val batteryReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            intent?.let {
-                val level = it.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
-                val scale = it.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
-                val pct = if (scale > 0) (level * 100 / scale.toFloat()).toInt() else 100
-
-                val status = it.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
-                val charging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
-                               status == BatteryManager.BATTERY_STATUS_FULL
-
-                overlayView.batteryLevel = pct
-                overlayView.isCharging = charging
+        override fun onReceive(context: Context, intent: Intent) {
+            val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+            val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+            val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
+            
+            val isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL
+            if (level != -1 && scale != -1) {
+                val batteryPct = (level * 100 / scale.toFloat()).toInt()
+                batteryView.batteryLevel = batteryPct
+                batteryView.isCharging = isCharging
             }
         }
     }
 
     override fun onCreate() {
         super.onCreate()
+        createNotificationChannel()
+        val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("Battery Glass Attivo")
+            .setContentText("L'overlay della batteria è in esecuzione in background.")
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setOngoing(true)
+            .build()
+        startForeground(1, notification)
 
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        overlayView = BatteryOverlayView(this)
+        batteryView = BatteryOverlayView(this)
 
-        val layoutType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-        } else {
-            @Suppress("DEPRECATION")
-            WindowManager.LayoutParams.TYPE_PHONE
-        }
-
-        val params = WindowManager.LayoutParams(
+        // I FLAG PIÙ IMPORTANTI: FLAG_NOT_TOUCHABLE e FLAG_NOT_FOCUSABLE rendono l'app 100% passiva ai tocchi
+        val layoutParams = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
-            layoutType,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            else WindowManager.LayoutParams.TYPE_PHONE,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                    or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+                    or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+                    or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         )
-        params.gravity = Gravity.TOP or Gravity.START
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            params.layoutInDisplayCutoutMode =
-                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-        }
-
-        windowManager.addView(overlayView, params)
-
-        val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(batteryReceiver, filter, Context.RECEIVER_EXPORTED)
-        } else {
-            registerReceiver(batteryReceiver, filter)
-        }
-
-        startForeground(1, createNotification())
+        windowManager.addView(batteryView, layoutParams)
+        registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         intent?.let {
-            val stroke = it.getFloatExtra("STROKE_WIDTH", 12f)
-            val padding = it.getFloatExtra("EDGE_PADDING", 0f)
-            val anim = it.getBooleanExtra("ANIM_ENABLED", true)
-            val wave = it.getBooleanExtra("WAVE_ENABLED", true)
-            val pulse = it.getBooleanExtra("PULSE_ENABLED", true)
-            val hideFull = it.getBooleanExtra("HIDE_FULL", false)
-            val paletteOrdinal = it.getIntExtra("PALETTE", 0)
-
-            overlayView.strokeWidthPx = stroke
-            overlayView.edgePaddingPx = padding
-            overlayView.animEnabled = anim
-            overlayView.waveEnabled = wave
-            overlayView.lowBatteryPulseEnabled = pulse
-            overlayView.hideOnFullEnabled = hideFull
-            overlayView.palette = BatteryOverlayView.Palette.values()[paletteOrdinal]
+            batteryView.strokeWidthPx = it.getFloatExtra("STROKE_WIDTH", 1f)
+            batteryView.edgePaddingPx = it.getFloatExtra("EDGE_PADDING", 0f)
+            batteryView.palette = BatteryOverlayView.Palette.values()[it.getIntExtra("PALETTE", 0)]
+            batteryView.animEnabled = it.getBooleanExtra("ANIM_ENABLED", true)
+            batteryView.waveEnabled = it.getBooleanExtra("WAVE_ENABLED", true)
+            batteryView.lowBatteryPulseEnabled = it.getBooleanExtra("PULSE_ENABLED", true)
+            batteryView.hideOnFullEnabled = it.getBooleanExtra("HIDE_FULL", false)
+            
+            // Nuovi extra per Alpha e interruttori barre
+            batteryView.userAlpha = it.getIntExtra("ALPHA", 255)
+            batteryView.showTop = it.getBooleanExtra("SHOW_TOP", true)
+            batteryView.showLeft = it.getBooleanExtra("SHOW_LEFT", true)
+            batteryView.showRight = it.getBooleanExtra("SHOW_RIGHT", true)
         }
         return START_STICKY
     }
@@ -104,27 +90,20 @@ class OverlayService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         unregisterReceiver(batteryReceiver)
-        if (::overlayView.isInitialized) {
-            windowManager.removeView(overlayView)
-        }
+        windowManager.removeView(batteryView)
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    private fun createNotification(): Notification {
-        val channelId = "battery_glass_channel"
-        val channel = NotificationChannel(
-            channelId,
-            "Battery Glass Overlay Service",
-            NotificationManager.IMPORTANCE_LOW
-        )
-        val manager = getSystemService(NotificationManager::class.java)
-        manager.createNotificationChannel(channel)
-
-        return NotificationCompat.Builder(this, channelId)
-            .setContentTitle("Battery Glass Attivo")
-            .setContentText("Indicatore della batteria in sovraimpressione.")
-            .setSmallIcon(android.R.drawable.ic_lock_idle_charging)
-            .build()
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "Servizio Overlay Batteria",
+                NotificationManager.IMPORTANCE_LOW
+            )
+            val manager = getSystemService(NotificationManager::class.java)
+            manager?.createNotificationChannel(channel)
+        }
     }
 }
