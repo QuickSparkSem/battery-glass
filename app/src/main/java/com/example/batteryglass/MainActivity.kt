@@ -30,6 +30,7 @@ class MainActivity : AppCompatActivity() {
         val sbAlpha = findViewById<SeekBar>(R.id.sbAlpha)
 
         val switchTopBar = findViewById<SwitchMaterial>(R.id.switchTopBar)
+        val spinnerTopMode = findViewById<Spinner>(R.id.spinnerTopMode)
         val switchLeftBar = findViewById<SwitchMaterial>(R.id.switchLeftBar)
         val switchRightBar = findViewById<SwitchMaterial>(R.id.switchRightBar)
         
@@ -40,15 +41,18 @@ class MainActivity : AppCompatActivity() {
         val btnToggleService = findViewById<Button>(R.id.btnToggleService)
 
         val palettes = arrayOf("Classico (Spettro 50 Sfumature)", "Minimal Monocromatico", "Cyberpunk Neon", "Pastello Soft")
-        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, palettes)
-        spinnerPalette.adapter = adapter
+        spinnerPalette.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, palettes)
         spinnerPalette.setSelection(prefs.getInt("palette", 0))
+
+        val topModes = arrayOf("Sinistra ➡️ Destra", "Destra ➡️ Sinistra", "Centro ➡️ Esterni", "Buco Nero (Erosione Notch)")
+        spinnerTopMode.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, topModes)
+        spinnerTopMode.setSelection(prefs.getInt("top_bar_mode", 0))
 
         sbThickness.progress = prefs.getFloat("stroke_width", 1f).toInt()
         tvThickness.text = "Spessore linea: ${sbThickness.progress} dp"
         
         sbPadding.progress = prefs.getFloat("edge_padding", 0f).toInt()
-        tvPadding.text = "Distanza dai bordi: ${sbPadding.progress} dp"
+        tvPadding.text = "Distanza dai bordi laterali: ${sbPadding.progress} dp"
 
         val currentAlphaPct = prefs.getInt("alpha_pct", 100)
         sbAlpha.progress = currentAlphaPct
@@ -79,6 +83,13 @@ class MainActivity : AppCompatActivity() {
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
+        spinnerTopMode.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                prefs.edit().putInt("top_bar_mode", position).apply(); updateService()
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
         sbThickness.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 val value = progress.coerceAtLeast(1)
@@ -91,7 +102,7 @@ class MainActivity : AppCompatActivity() {
 
         sbPadding.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                tvPadding.text = "Distanza dai bordi: $progress dp"
+                tvPadding.text = "Distanza dai bordi laterali: $progress dp"
                 prefs.edit().putFloat("edge_padding", progress.toFloat()).apply(); updateService()
             }
             override fun onStartTrackingTouch(p0: SeekBar?) {}
@@ -100,7 +111,7 @@ class MainActivity : AppCompatActivity() {
 
         sbAlpha.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                val pct = progress.coerceAtLeast(10) // Minimo 10% di opacità per sicurezza
+                val pct = progress.coerceAtLeast(10)
                 tvAlpha.text = "Trasparenza: $pct%"
                 prefs.edit().putInt("alpha_pct", pct).apply(); updateService()
             }
@@ -157,6 +168,7 @@ class MainActivity : AppCompatActivity() {
             putExtra("EDGE_PADDING", prefs.getFloat("edge_padding", 0f) * density)
             putExtra("ALPHA", alpha255)
             putExtra("SHOW_TOP", prefs.getBoolean("show_top", true))
+            putExtra("TOP_BAR_MODE", prefs.getInt("top_bar_mode", 0))
             putExtra("SHOW_LEFT", prefs.getBoolean("show_left", true))
             putExtra("SHOW_RIGHT", prefs.getBoolean("show_right", true))
             putExtra("PALETTE", prefs.getInt("palette", 0))
