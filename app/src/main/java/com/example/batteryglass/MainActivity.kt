@@ -1,212 +1,369 @@
-package com.example.batteryglass
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
 
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import android.net.Uri
-import android.os.BatteryManager
-import android.os.Bundle
-import android.provider.Settings
-import android.view.View
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
-import android.widget.SeekBar
-import android.widget.Spinner
-import android.widget.TextView
-import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.card.MaterialCardView
-import com.google.android.material.switchmaterial.SwitchMaterial
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:padding="16dp">
 
-class MainActivity : AppCompatActivity() {
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
-    private lateinit var cardPermission: MaterialCardView
-    private lateinit var tvStatusSubtitle: TextView
-    private lateinit var btnToggleService: MaterialButton
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Battery Glass"
+                android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
+                android:textStyle="bold" />
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+            <TextView
+                android:id="@+id/tvStatusSubtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:layout_marginBottom="16dp"
+                android:alpha="0.75"
+                android:text="Overlay spento"
+                android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
 
-        val prefs = getSharedPreferences(OverlayService.PREFS_NAME, Context.MODE_PRIVATE)
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardPermission"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="16dp"
+                app:strokeWidth="1dp">
 
-        cardPermission = findViewById(R.id.cardPermission)
-        tvStatusSubtitle = findViewById(R.id.tvStatusSubtitle)
-        btnToggleService = findViewById(R.id.btnToggleService)
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-        val btnPermission = findViewById<MaterialButton>(R.id.btnOverlayPermission)
-        val spinnerPalette = findViewById<Spinner>(R.id.spinnerPalette)
-        val tvAlpha = findViewById<TextView>(R.id.tvAlpha)
-        val sbAlpha = findViewById<SeekBar>(R.id.sbAlpha)
-        val tvThickness = findViewById<TextView>(R.id.tvThickness)
-        val sbThickness = findViewById<SeekBar>(R.id.sbThickness)
-        val tvPadding = findViewById<TextView>(R.id.tvPadding)
-        val sbPadding = findViewById<SeekBar>(R.id.sbPadding)
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Permesso richiesto"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                        android:textStyle="bold" />
 
-        val switchTopBar = findViewById<SwitchMaterial>(R.id.switchTopBar)
-        val layoutTopMode = findViewById<View>(R.id.layoutTopMode)
-        val spinnerTopMode = findViewById<Spinner>(R.id.spinnerTopMode)
-        val switchLeftBar = findViewById<SwitchMaterial>(R.id.switchLeftBar)
-        val switchRightBar = findViewById<SwitchMaterial>(R.id.switchRightBar)
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:layout_marginBottom="12dp"
+                        android:alpha="0.8"
+                        android:text="Consenti a Battery Glass di mostrare la barra batteria sopra le altre app."
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall" />
 
-        val switchWave = findViewById<SwitchMaterial>(R.id.switchWave)
-        val switchAnim = findViewById<SwitchMaterial>(R.id.switchAnimation)
-        val switchPulse = findViewById<SwitchMaterial>(R.id.switchPulse)
-        val switchHideFull = findViewById<SwitchMaterial>(R.id.switchHideFull)
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnOverlayPermission"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Concedi Permesso Overlay" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-        val palettes = arrayOf(
-            "Classico (Spettro 50 sfumature)",
-            "Minimal Monocromatico",
-            "Cyberpunk Neon",
-            "Pastello Soft"
-        )
-        spinnerPalette.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, palettes)
-        spinnerPalette.setSelection(prefs.getInt("palette", 0).coerceIn(0, palettes.lastIndex))
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp"
+                app:cardCornerRadius="16dp"
+                app:strokeWidth="1dp">
 
-        val topModes = arrayOf(
-            "Sinistra → Destra",
-            "Destra → Sinistra",
-            "Centro → Esterni",
-            "Buco Nero (Erosione Notch)"
-        )
-        spinnerTopMode.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, topModes)
-        spinnerTopMode.setSelection(prefs.getInt("top_bar_mode", 0).coerceIn(0, topModes.lastIndex))
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-        val savedAlpha = prefs.getInt("alpha_pct", 100).coerceIn(10, 100)
-        sbAlpha.progress = savedAlpha - 10
-        tvAlpha.text = "$savedAlpha%"
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:text="Aspetto"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                        android:textStyle="bold" />
 
-        val savedThickness = prefs.getFloat("stroke_width", 2f).toInt().coerceIn(1, 50)
-        sbThickness.progress = savedThickness - 1
-        tvThickness.text = "$savedThickness dp"
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:alpha="0.75"
+                        android:text="Palette colori"
+                        android:textAppearance="@style/TextAppearance.Material3.LabelMedium" />
 
-        val savedPadding = prefs.getFloat("edge_padding", 0f).toInt().coerceIn(0, 100)
-        sbPadding.progress = savedPadding
-        tvPadding.text = "$savedPadding dp"
+                    <Spinner
+                        android:id="@+id/spinnerPalette"
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:layout_marginBottom="14dp" />
 
-        val showTop = prefs.getBoolean("show_top", true)
-        switchTopBar.isChecked = showTop
-        layoutTopMode.visibility = if (showTop) View.VISIBLE else View.GONE
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Opacità"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+                        <TextView
+                            android:id="@+id/tvAlpha"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="100%"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                    <SeekBar
+                        android:id="@+id/sbAlpha"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:layout_marginBottom="14dp"
+                        android:max="90" />
 
-        switchLeftBar.isChecked = prefs.getBoolean("show_left", true)
-        switchRightBar.isChecked = prefs.getBoolean("show_right", true)
-        switchWave.isChecked = prefs.getBoolean("wave_enabled", true)
-        switchAnim.isChecked = prefs.getBoolean("anim_enabled", true)
-        switchPulse.isChecked = prefs.getBoolean("pulse_enabled", true)
-        switchHideFull.isChecked = prefs.getBoolean("hide_full_enabled", false)
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Spessore linea"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+                        <TextView
+                            android:id="@+id/tvThickness"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="2 dp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                    <SeekBar
+                        android:id="@+id/sbThickness"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:layout_marginBottom="14dp"
+                        android:max="49" />
 
-        btnPermission.setOnClickListener {
-            val intent = Intent(
-                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                Uri.parse("package:$packageName")
-            )
-            startActivity(intent)
-        }
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Margine dai bordi laterali"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+                        <TextView
+                            android:id="@+id/tvPadding"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0 dp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                    <SeekBar
+                        android:id="@+id/sbPadding"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:layout_marginBottom="14dp"
+                        android:max="100" />
 
-        spinnerPalette.onItemSelectedListener = onItemSelected { pos ->
-            prefs.edit().putInt("palette", pos).apply()
-        }
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Intervallo interruzioni"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+                        <TextView
+                            android:id="@+id/tvTickInterval"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Ogni 10%"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                    <SeekBar
+                        android:id="@+id/sbTickInterval"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:max="7" />
 
-        spinnerTopMode.onItemSelectedListener = onItemSelected { pos ->
-            prefs.edit().putInt("top_bar_mode", pos).apply()
-        }
+                    <LinearLayout
+                        android:id="@+id/layoutTickGap"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:orientation="vertical">
 
-        sbAlpha.setOnSeekBarChangeListener(onSeekChanged { progress ->
-            val pct = progress + 10
-            tvAlpha.text = "$pct%"
-            prefs.edit().putInt("alpha_pct", pct).apply()
-        })
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Larghezza spazio vuoto"
+                                android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+                            <TextView
+                                android:id="@+id/tvTickGap"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="3 dp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                        <SeekBar
+                            android:id="@+id/sbTickGap"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:max="14" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-        sbThickness.setOnSeekBarChangeListener(onSeekChanged { progress ->
-            val dp = progress + 1
-            tvThickness.text = "$dp dp"
-            prefs.edit().putFloat("stroke_width", dp.toFloat()).apply()
-        })
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp"
+                app:cardCornerRadius="16dp"
+                app:strokeWidth="1dp">
 
-        sbPadding.setOnSeekBarChangeListener(onSeekChanged { progress ->
-            tvPadding.text = "$progress dp"
-            prefs.edit().putFloat("edge_padding", progress.toFloat()).apply()
-        })
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-        switchTopBar.setOnCheckedChangeListener { _, isChecked ->
-            layoutTopMode.visibility = if (isChecked) View.VISIBLE else View.GONE
-            prefs.edit().putBoolean("show_top", isChecked).apply()
-        }
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:text="Posizione"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                        android:textStyle="bold" />
 
-        switchLeftBar.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean("show_left", isChecked).apply()
-        }
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/switchTopBar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Barra superiore" />
 
-        switchRightBar.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean("show_right", isChecked).apply()
-        }
+                    <LinearLayout
+                        android:id="@+id/layoutTopMode"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:layout_marginBottom="8dp"
+                        android:orientation="vertical">
 
-        switchWave.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean("wave_enabled", isChecked).apply()
-        }
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:alpha="0.75"
+                            android:text="Direzione barra superiore"
+                            android:textAppearance="@style/TextAppearance.Material3.LabelMedium" />
 
-        switchAnim.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean("anim_enabled", isChecked).apply()
-        }
+                        <Spinner
+                            android:id="@+id/spinnerTopMode"
+                            android:layout_width="match_parent"
+                            android:layout_height="44dp" />
+                    </LinearLayout>
 
-        switchPulse.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean("pulse_enabled", isChecked).apply()
-        }
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/switchLeftBar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Barra sinistra" />
 
-        switchHideFull.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean("hide_full_enabled", isChecked).apply()
-        }
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/switchRightBar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Barra destra" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-        btnToggleService.setOnClickListener {
-            if (!Settings.canDrawOverlays(this)) {
-                Toast.makeText(this, "Concedi prima il permesso di sovraimpressione", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:strokeWidth="1dp">
 
-            val serviceIntent = Intent(this, OverlayService::class.java)
-            if (!OverlayService.isRunning) {
-                ContextCompat.startForegroundService(this, serviceIntent)
-                updateServiceUi(running = true)
-            } else {
-                stopService(serviceIntent)
-                updateServiceUi(running = false)
-            }
-        }
-    }
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-    override fun onResume() {
-        super.onResume()
-        val hasPermission = Settings.canDrawOverlays(this)
-        cardPermission.visibility = if (hasPermission) View.GONE else View.VISIBLE
-        updateServiceUi(OverlayService.isRunning)
-    }
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:text="Effetti e comportamento"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                        android:textStyle="bold" />
 
-    private fun updateServiceUi(running: Boolean) {
-        val batteryPct = readCurrentBatteryPct()
-        val stateLabel = if (running) "Overlay attivo" else "Overlay spento"
-        tvStatusSubtitle.text = "$stateLabel • Batteria $batteryPct%"
-        btnToggleService.text = if (running) "Ferma Sovraimpressione" else "Avvia Sovraimpressione"
-    }
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/switchWave"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Effetto onda liquida" />
 
-    private fun readCurrentBatteryPct(): Int {
-        val batteryStatus = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        val level = batteryStatus?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
-        val scale = batteryStatus?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
-        return if (level >= 0 && scale > 0) ((level * 100f) / scale).toInt() else 100
-    }
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/switchAnimation"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Pulsazione durante la ricarica" />
 
-    private fun onItemSelected(action: (Int) -> Unit) = object : AdapterView.OnItemSelectedListener {
-        override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) = action(position)
-        override fun onNothingSelected(parent: AdapterView<*>?) {}
-    }
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/switchPulse"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Avviso batteria scarica (≤ 15%)" />
 
-    private fun onSeekChanged(action: (Int) -> Unit) = object : SeekBar.OnSeekBarChangeListener {
-        override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-            if (fromUser) action(progress)
-        }
-        override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-        override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-    }
-}
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/switchHideFull"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Nascondi al 100% (non in carica)" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:elevation="8dp"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="12dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnToggleService"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="Avvia Sovraimpressione"
+            app:cornerRadius="14dp" />
+    </LinearLayout>
+
+</LinearLayout>
