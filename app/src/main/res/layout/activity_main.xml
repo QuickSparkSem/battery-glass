@@ -17,6 +17,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <!-- Intestazione -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -28,12 +29,13 @@
                 android:id="@+id/tvStatusSubtitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:layout_marginBottom="16dp"
-                android:alpha="0.75"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="18dp"
+                android:alpha="0.8"
                 android:text="Overlay spento"
                 android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
 
+            <!-- Scheda Permesso -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardPermission"
                 android:layout_width="match_parent"
@@ -73,10 +75,11 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- 1. Colori e Sfumature -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="14dp"
+                android:layout_marginBottom="16dp"
                 app:cardCornerRadius="16dp"
                 app:strokeWidth="1dp">
 
@@ -89,161 +92,200 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="12dp"
-                        android:text="Aspetto"
+                        android:text="1. Colori e Sfumature"
                         android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
                         android:textStyle="bold" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:alpha="0.75"
-                        android:text="Palette colori"
-                        android:textAppearance="@style/TextAppearance.Material3.LabelMedium" />
+                        android:layout_marginTop="2dp"
+                        android:layout_marginBottom="14dp"
+                        android:alpha="0.7"
+                        android:text="Colore generale della barra da carica a scarica"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall" />
 
                     <Spinner
                         android:id="@+id/spinnerPalette"
                         android:layout_width="match_parent"
-                        android:layout_height="44dp"
-                        android:layout_marginBottom="14dp" />
+                        android:layout_height="48dp" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="14dp"
+                        android:alpha="0.12"
+                        android:background="?android:attr/textColorPrimary" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
                         android:orientation="horizontal">
                         <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Opacità"
-                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+                            android:text="Opacità barra"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
                         <TextView
                             android:id="@+id/tvAlpha"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="100%"
+                            android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
                             android:textStyle="bold" />
                     </LinearLayout>
+
                     <SeekBar
                         android:id="@+id/sbAlpha"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:layout_marginBottom="14dp"
+                        android:layout_marginTop="8dp"
                         android:max="90" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
+            <!-- 2. Tacche e Indicatore di Consumo -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="16dp"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Spessore linea"
-                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
-                        <TextView
-                            android:id="@+id/tvThickness"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="2 dp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-                    <SeekBar
-                        android:id="@+id/sbThickness"
-                        android:layout_width="match_parent"
+                        android:text="2. Tacche e Consumo"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
+                        android:layout_marginTop="2dp"
                         android:layout_marginBottom="14dp"
-                        android:max="49" />
+                        android:alpha="0.7"
+                        android:text="Interruzioni periodiche e sfumatura del pezzettino che si erode"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Margine dai bordi laterali"
-                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
-                        <TextView
-                            android:id="@+id/tvPadding"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="0 dp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-                    <SeekBar
-                        android:id="@+id/sbPadding"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:layout_marginBottom="14dp"
-                        android:max="100" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
                         android:orientation="horizontal">
                         <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="Intervallo interruzioni"
-                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+                            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
                         <TextView
                             android:id="@+id/tvTickInterval"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Ogni 10%"
+                            android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
                             android:textStyle="bold" />
                     </LinearLayout>
+
                     <SeekBar
                         android:id="@+id/sbTickInterval"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
+                        android:layout_marginTop="8dp"
                         android:max="7" />
 
                     <LinearLayout
-                        android:id="@+id/layoutTickGap"
+                        android:id="@+id/layoutTickOptions"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="14dp"
                         android:orientation="vertical">
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginVertical="14dp"
+                            android:alpha="0.12"
+                            android:background="?android:attr/textColorPrimary" />
 
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
                             android:orientation="horizontal">
                             <TextView
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
                                 android:text="Larghezza spazio vuoto"
-                                android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+                                android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
                             <TextView
                                 android:id="@+id/tvTickGap"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="3 dp"
+                                android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
                                 android:textStyle="bold" />
                         </LinearLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:alpha="0.7"
+                            android:text="Aumenta per vedere meglio lo stacco su schermi grandi"
+                            android:textAppearance="@style/TextAppearance.Material3.BodySmall" />
+
                         <SeekBar
                             android:id="@+id/sbTickGap"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:max="14" />
+                            android:layout_marginTop="8dp"
+                            android:max="19" />
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginVertical="14dp"
+                            android:alpha="0.12"
+                            android:background="?android:attr/textColorPrimary" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Sfumatura ultimo pezzettino"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:layout_marginBottom="8dp"
+                            android:alpha="0.7"
+                            android:text="Come cambia colore il blocco mentre si consuma"
+                            android:textAppearance="@style/TextAppearance.Material3.BodySmall" />
+
+                        <Spinner
+                            android:id="@+id/spinnerErosionMode"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp" />
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- 3. Dimensioni e Posizione -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="14dp"
+                android:layout_marginBottom="16dp"
                 app:cardCornerRadius="16dp"
                 app:strokeWidth="1dp">
 
@@ -256,16 +298,84 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="8dp"
-                        android:text="Posizione"
+                        android:layout_marginBottom="14dp"
+                        android:text="3. Dimensioni e Bordi"
                         android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
                         android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Spessore linea"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+                        <TextView
+                            android:id="@+id/tvThickness"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="2 dp"
+                            android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                    <SeekBar
+                        android:id="@+id/sbThickness"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:max="49" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="14dp"
+                        android:alpha="0.12"
+                        android:background="?android:attr/textColorPrimary" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Margine dai bordi laterali"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+                        <TextView
+                            android:id="@+id/tvPadding"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0 dp"
+                            android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                    <SeekBar
+                        android:id="@+id/sbPadding"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:max="100" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="14dp"
+                        android:alpha="0.12"
+                        android:background="?android:attr/textColorPrimary" />
 
                     <com.google.android.material.switchmaterial.SwitchMaterial
                         android:id="@+id/switchTopBar"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Barra superiore" />
+                        android:minHeight="48dp"
+                        android:text="Barra superiore"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
 
                     <LinearLayout
                         android:id="@+id/layoutTopMode"
@@ -278,30 +388,36 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:alpha="0.75"
+                            android:layout_marginBottom="4dp"
+                            android:alpha="0.7"
                             android:text="Direzione barra superiore"
-                            android:textAppearance="@style/TextAppearance.Material3.LabelMedium" />
+                            android:textAppearance="@style/TextAppearance.Material3.BodySmall" />
 
                         <Spinner
                             android:id="@+id/spinnerTopMode"
                             android:layout_width="match_parent"
-                            android:layout_height="44dp" />
+                            android:layout_height="48dp" />
                     </LinearLayout>
 
                     <com.google.android.material.switchmaterial.SwitchMaterial
                         android:id="@+id/switchLeftBar"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Barra sinistra" />
+                        android:minHeight="48dp"
+                        android:text="Barra sinistra"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
 
                     <com.google.android.material.switchmaterial.SwitchMaterial
                         android:id="@+id/switchRightBar"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Barra destra" />
+                        android:minHeight="48dp"
+                        android:text="Barra destra"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- 4. Animazioni e Comportamento -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -318,7 +434,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="8dp"
-                        android:text="Effetti e comportamento"
+                        android:text="4. Animazioni e Comportamento"
                         android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
                         android:textStyle="bold" />
 
@@ -326,31 +442,40 @@
                         android:id="@+id/switchWave"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Effetto onda liquida" />
+                        android:minHeight="48dp"
+                        android:text="Effetto onda liquida"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
 
                     <com.google.android.material.switchmaterial.SwitchMaterial
                         android:id="@+id/switchAnimation"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Pulsazione durante la ricarica" />
+                        android:minHeight="48dp"
+                        android:text="Pulsazione durante la ricarica"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
 
                     <com.google.android.material.switchmaterial.SwitchMaterial
                         android:id="@+id/switchPulse"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Avviso batteria scarica (≤ 15%)" />
+                        android:minHeight="48dp"
+                        android:text="Avviso batteria scarica (≤ 15%)"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
 
                     <com.google.android.material.switchmaterial.SwitchMaterial
                         android:id="@+id/switchHideFull"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Nascondi al 100% (non in carica)" />
+                        android:minHeight="48dp"
+                        android:text="Nascondi al 100% (non in carica)"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
     </ScrollView>
 
+    <!-- Barra inferiore fissa per Avvio/Stop -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -361,7 +486,7 @@
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnToggleService"
             android:layout_width="match_parent"
-            android:layout_height="52dp"
+            android:layout_height="54dp"
             android:text="Avvia Sovraimpressione"
             app:cornerRadius="14dp" />
     </LinearLayout>
