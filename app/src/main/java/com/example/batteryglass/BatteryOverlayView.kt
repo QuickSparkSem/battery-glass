@@ -51,6 +51,10 @@ class BatteryOverlayView(context: Context) : View(context) {
     var tickGapPx: Float = 3f
         set(value) { field = value.coerceAtLeast(1f); invalidate() }
 
+    // 0 = Nero -> Bianco, 1 = Bianco -> Nero, 2 = Colore -> Bianco, 3 = Colore -> Nero, 4 = Disattivata
+    var erosionColorMode: Int = 0
+        set(value) { field = value.coerceIn(0, 4); invalidate() }
+
     var isScreenOn: Boolean = true
         set(value) { field = value; updateAnimators() }
 
@@ -115,6 +119,7 @@ class BatteryOverlayView(context: Context) : View(context) {
         hideOnFullEnabled = prefs.getBoolean("hide_full_enabled", false)
         tickIntervalPct = prefs.getInt("tick_interval_pct", 10).coerceIn(0, 50)
         tickGapPx = prefs.getFloat("tick_gap_dp", 3f).coerceAtLeast(1f) * density
+        erosionColorMode = prefs.getInt("erosion_mode", 0).coerceIn(0, 4)
     }
 
     override fun onAttachedToWindow() {
@@ -188,6 +193,17 @@ class BatteryOverlayView(context: Context) : View(context) {
         }
     }
 
+    // localFraction: 1.0f = blocco intero appena iniziato, 0.0f = blocco quasi completamente eroso
+    private fun getLastSegmentColor(baseColor: Int, localFraction: Float): Int {
+        return when (erosionColorMode) {
+            0 -> blendColor(Color.WHITE, Color.BLACK, localFraction) // Nero (pieno) -> Bianco (consumato)
+            1 -> blendColor(Color.BLACK, Color.WHITE, localFraction) // Bianco (pieno) -> Nero (consumato)
+            2 -> blendColor(Color.WHITE, baseColor, localFraction)   // Colore barra -> Bianco
+            3 -> blendColor(Color.BLACK, baseColor, localFraction)   // Colore barra -> Nero
+            else -> baseColor
+        }
+    }
+
     private fun startChargingAnimation() {
         if (chargingAnimator?.isRunning == true) return
         chargingAnimator = ValueAnimator.ofInt(100, 255).apply {
@@ -258,9 +274,8 @@ class BatteryOverlayView(context: Context) : View(context) {
             currentAlpha = lowBatteryAlpha
         }
 
-        paint.color = getBatteryColor(batteryLevel)
-        paint.alpha = ((currentAlpha * userAlpha) / 255).coerceIn(0, 255)
-        // Taglio netto sulle interruzioni così lo spazio vuoto è sempre preciso
+        val finalAlpha = ((currentAlpha * userAlpha) / 255).coerceIn(0, 255)
+        val baseColor = getBatteryColor(batteryLevel)
         paint.strokeCap = if (tickIntervalPct > 0) Paint.Cap.BUTT else Paint.Cap.ROUND
 
         val h = height.toFloat()
@@ -272,13 +287,17 @@ class BatteryOverlayView(context: Context) : View(context) {
         val waveAmplitude = (strokeWidthPx * 0.4f).coerceAtLeast(2f)
 
         if (showLeft) {
-            forEachBatterySegment(h) { startDist, endDist ->
+            forEachBatterySegment(h, baseColor) { startDist, endDist, segColor ->
+                paint.color = segColor
+                paint.alpha = finalAlpha
                 drawVerticalBar(canvas, xLeft, h - startDist, h - endDist, phaseOffset = 0f, waveAmplitude)
             }
         }
 
         if (showRight) {
-            forEachBatterySegment(h) { startDist, endDist ->
+            forEachBatterySegment(h, baseColor) { startDist, endDist, segColor ->
+                paint.color = segColor
+                paint.alpha = finalAlpha
                 drawVerticalBar(canvas, xRight, h - startDist, h - endDist, phaseOffset = 2f, waveAmplitude)
             }
         }
@@ -290,23 +309,31 @@ class BatteryOverlayView(context: Context) : View(context) {
 
             when (topBarMode) {
                 0 -> { // Sinistra -> Destra
-                    forEachBatterySegment(totalW) { startDist, endDist ->
+                    forEachBatterySegment(totalW, baseColor) { startDist, endDist, segColor ->
+                        paint.color = segColor
+                        paint.alpha = finalAlpha
                         drawTopSegment(canvas, xLeft + startDist, xLeft + endDist, topY, waveAmplitude)
                     }
                 }
                 1 -> { // Destra -> Sinistra
-                    forEachBatterySegment(totalW) { startDist, endDist ->
+                    forEachBatterySegment(totalW, baseColor) { startDist, endDist, segColor ->
+                        paint.color = segColor
+                        paint.alpha = finalAlpha
                         drawTopSegment(canvas, xRight - endDist, xRight - startDist, topY, waveAmplitude)
                     }
                 }
                 2 -> { // Centro -> Esterni
-                    forEachBatterySegment(halfW) { startDist, endDist ->
+                    forEachBatterySegment(halfW, baseColor) { startDist, endDist, segColor ->
+                        paint.color = segColor
+                        paint.alpha = finalAlpha
                         drawTopSegment(canvas, centerX + startDist, centerX + endDist, topY, waveAmplitude)
                         drawTopSegment(canvas, centerX - endDist, centerX - startDist, topY, waveAmplitude)
                     }
                 }
                 3 -> { // Buco Nero (Erosione dal centro verso l'esterno)
-                    forEachBatterySegment(halfW) { startDist, endDist ->
+                    forEachBatterySegment(halfW, baseColor) { startDist, endDist, segColor ->
+                        paint.color = segColor
+                        paint.alpha = finalAlpha
                         drawTopSegment(canvas, xLeft + startDist, xLeft + endDist, topY, waveAmplitude)
                         drawTopSegment(canvas, xRight - endDist, xRight - startDist, topY, waveAmplitude)
                     }
@@ -317,33 +344,47 @@ class BatteryOverlayView(context: Context) : View(context) {
 
     private inline fun forEachBatterySegment(
         totalLengthPx: Float,
-        onSegment: (startDist: Float, endDist: Float) -> Unit
+        baseColor: Int,
+        onSegment: (startDist: Float, endDist: Float, segmentColor: Int) -> Unit
     ) {
         if (totalLengthPx <= 1f || batteryLevel <= 0) return
 
         if (tickIntervalPct <= 0) {
-            onSegment(0f, totalLengthPx * (batteryLevel / 100f))
+            onSegment(0f, totalLengthPx * (batteryLevel / 100f), baseColor)
             return
         }
 
         val step = tickIntervalPct
         val fullIntervalPx = totalLengthPx * (step / 100f)
-        // Garantisce che ogni tacca piena mantenga almeno 1.5px visibili anche con gap larghi
-        val maxAllowedGap = (fullIntervalPx - 1.5f).coerceAtLeast(0f)
+        val maxAllowedGap = (fullIntervalPx - 2f).coerceAtLeast(0f)
         val effectiveGap = tickGapPx.coerceAtMost(maxAllowedGap)
         val halfGap = effectiveGap / 2f
 
         var currentPct = 0
         while (currentPct < batteryLevel) {
             val nextPct = (currentPct + step).coerceAtMost(batteryLevel)
+            val isLastSegment = nextPct == batteryLevel
+
             var startDist = totalLengthPx * (currentPct / 100f)
             var endDist = totalLengthPx * (nextPct / 100f)
 
             if (currentPct > 0) startDist += halfGap
-            if (nextPct < 100 && nextPct == currentPct + step) endDist -= halfGap
+            if (nextPct < 100 && nextPct == currentPct + step) {
+                endDist -= halfGap
+            } else if (isLastSegment && endDist < startDist + 2f) {
+                // Mantiene visibile anche l'ultimo 1% residuo del blocco senza invadere lo spazio vuoto
+                endDist = (startDist + 2f).coerceAtMost(totalLengthPx)
+            }
+
+            val segColor = if (isLastSegment) {
+                val localFraction = ((nextPct - currentPct).toFloat() / step.toFloat()).coerceIn(0f, 1f)
+                getLastSegmentColor(baseColor, localFraction)
+            } else {
+                baseColor
+            }
 
             if (endDist - startDist > 0.5f) {
-                onSegment(startDist, endDist)
+                onSegment(startDist, endDist, segColor)
             }
             currentPct += step
         }
