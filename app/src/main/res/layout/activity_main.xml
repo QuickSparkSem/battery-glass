@@ -179,7 +179,64 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
+                        android:layout_marginBottom="14dp"
                         android:max="100" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Intervallo interruzioni"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+                        <TextView
+                            android:id="@+id/tvTickInterval"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Ogni 10%"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                    <SeekBar
+                        android:id="@+id/sbTickInterval"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:max="7" />
+
+                    <LinearLayout
+                        android:id="@+id/layoutTickGap"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Larghezza spazio vuoto"
+                                android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+                            <TextView
+                                android:id="@+id/tvTickGap"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="3 dp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                        <SeekBar
+                            android:id="@+id/sbTickGap"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:max="14" />
+                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
