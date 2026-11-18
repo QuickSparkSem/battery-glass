@@ -2,185 +2,211 @@ package com.example.batteryglass
 
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.Uri
+import android.os.BatteryManager
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
-import android.widget.*
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.SeekBar
+import android.widget.Spinner
+import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.switchmaterial.SwitchMaterial
 
 class MainActivity : AppCompatActivity() {
 
-    private var isServiceRunning = false
+    private lateinit var cardPermission: MaterialCardView
+    private lateinit var tvStatusSubtitle: TextView
+    private lateinit var btnToggleService: MaterialButton
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val prefs = getSharedPreferences("battery_glass_prefs", Context.MODE_PRIVATE)
+        val prefs = getSharedPreferences(OverlayService.PREFS_NAME, Context.MODE_PRIVATE)
 
-        val btnPermission = findViewById<Button>(R.id.btnOverlayPermission)
+        cardPermission = findViewById(R.id.cardPermission)
+        tvStatusSubtitle = findViewById(R.id.tvStatusSubtitle)
+        btnToggleService = findViewById(R.id.btnToggleService)
+
+        val btnPermission = findViewById<MaterialButton>(R.id.btnOverlayPermission)
         val spinnerPalette = findViewById<Spinner>(R.id.spinnerPalette)
+        val tvAlpha = findViewById<TextView>(R.id.tvAlpha)
+        val sbAlpha = findViewById<SeekBar>(R.id.sbAlpha)
         val tvThickness = findViewById<TextView>(R.id.tvThickness)
         val sbThickness = findViewById<SeekBar>(R.id.sbThickness)
         val tvPadding = findViewById<TextView>(R.id.tvPadding)
         val sbPadding = findViewById<SeekBar>(R.id.sbPadding)
-        val tvAlpha = findViewById<TextView>(R.id.tvAlpha)
-        val sbAlpha = findViewById<SeekBar>(R.id.sbAlpha)
 
         val switchTopBar = findViewById<SwitchMaterial>(R.id.switchTopBar)
+        val layoutTopMode = findViewById<View>(R.id.layoutTopMode)
         val spinnerTopMode = findViewById<Spinner>(R.id.spinnerTopMode)
         val switchLeftBar = findViewById<SwitchMaterial>(R.id.switchLeftBar)
         val switchRightBar = findViewById<SwitchMaterial>(R.id.switchRightBar)
-        
-        val switchAnim = findViewById<SwitchMaterial>(R.id.switchAnimation)
+
         val switchWave = findViewById<SwitchMaterial>(R.id.switchWave)
+        val switchAnim = findViewById<SwitchMaterial>(R.id.switchAnimation)
         val switchPulse = findViewById<SwitchMaterial>(R.id.switchPulse)
         val switchHideFull = findViewById<SwitchMaterial>(R.id.switchHideFull)
-        val btnToggleService = findViewById<Button>(R.id.btnToggleService)
 
-        val palettes = arrayOf("Classico (Spettro 50 Sfumature)", "Minimal Monocromatico", "Cyberpunk Neon", "Pastello Soft")
+        val palettes = arrayOf(
+            "Classico (Spettro 50 sfumature)",
+            "Minimal Monocromatico",
+            "Cyberpunk Neon",
+            "Pastello Soft"
+        )
         spinnerPalette.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, palettes)
-        spinnerPalette.setSelection(prefs.getInt("palette", 0))
+        spinnerPalette.setSelection(prefs.getInt("palette", 0).coerceIn(0, palettes.lastIndex))
 
-        val topModes = arrayOf("Sinistra ➡️ Destra", "Destra ➡️ Sinistra", "Centro ➡️ Esterni", "Buco Nero (Erosione Notch)")
+        val topModes = arrayOf(
+            "Sinistra → Destra",
+            "Destra → Sinistra",
+            "Centro → Esterni",
+            "Buco Nero (Erosione Notch)"
+        )
         spinnerTopMode.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, topModes)
-        spinnerTopMode.setSelection(prefs.getInt("top_bar_mode", 0))
+        spinnerTopMode.setSelection(prefs.getInt("top_bar_mode", 0).coerceIn(0, topModes.lastIndex))
 
-        sbThickness.progress = prefs.getFloat("stroke_width", 1f).toInt()
-        tvThickness.text = "Spessore linea: ${sbThickness.progress} dp"
-        
-        sbPadding.progress = prefs.getFloat("edge_padding", 0f).toInt()
-        tvPadding.text = "Distanza dai bordi laterali: ${sbPadding.progress} dp"
+        val savedAlpha = prefs.getInt("alpha_pct", 100).coerceIn(10, 100)
+        sbAlpha.progress = savedAlpha - 10
+        tvAlpha.text = "$savedAlpha%"
 
-        val currentAlphaPct = prefs.getInt("alpha_pct", 100)
-        sbAlpha.progress = currentAlphaPct
-        tvAlpha.text = "Trasparenza: $currentAlphaPct%"
+        val savedThickness = prefs.getFloat("stroke_width", 2f).toInt().coerceIn(1, 50)
+        sbThickness.progress = savedThickness - 1
+        tvThickness.text = "$savedThickness dp"
 
-        switchTopBar.isChecked = prefs.getBoolean("show_top", true)
+        val savedPadding = prefs.getFloat("edge_padding", 0f).toInt().coerceIn(0, 100)
+        sbPadding.progress = savedPadding
+        tvPadding.text = "$savedPadding dp"
+
+        val showTop = prefs.getBoolean("show_top", true)
+        switchTopBar.isChecked = showTop
+        layoutTopMode.visibility = if (showTop) View.VISIBLE else View.GONE
+
         switchLeftBar.isChecked = prefs.getBoolean("show_left", true)
         switchRightBar.isChecked = prefs.getBoolean("show_right", true)
-
-        switchAnim.isChecked = prefs.getBoolean("anim_enabled", true)
         switchWave.isChecked = prefs.getBoolean("wave_enabled", true)
+        switchAnim.isChecked = prefs.getBoolean("anim_enabled", true)
         switchPulse.isChecked = prefs.getBoolean("pulse_enabled", true)
         switchHideFull.isChecked = prefs.getBoolean("hide_full_enabled", false)
 
         btnPermission.setOnClickListener {
-            if (!Settings.canDrawOverlays(this)) {
-                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
-                startActivity(intent)
-            } else {
-                Toast.makeText(this, "Permesso già concesso!", Toast.LENGTH_SHORT).show()
-            }
+            val intent = Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:$packageName")
+            )
+            startActivity(intent)
         }
 
-        spinnerPalette.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                prefs.edit().putInt("palette", position).apply(); updateService()
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        spinnerPalette.onItemSelectedListener = onItemSelected { pos ->
+            prefs.edit().putInt("palette", pos).apply()
         }
 
-        spinnerTopMode.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                prefs.edit().putInt("top_bar_mode", position).apply(); updateService()
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        spinnerTopMode.onItemSelectedListener = onItemSelected { pos ->
+            prefs.edit().putInt("top_bar_mode", pos).apply()
         }
 
-        sbThickness.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                val value = progress.coerceAtLeast(1)
-                tvThickness.text = "Spessore linea: $value dp"
-                prefs.edit().putFloat("stroke_width", value.toFloat()).apply(); updateService()
-            }
-            override fun onStartTrackingTouch(p0: SeekBar?) {}
-            override fun onStopTrackingTouch(p0: SeekBar?) {}
+        sbAlpha.setOnSeekBarChangeListener(onSeekChanged { progress ->
+            val pct = progress + 10
+            tvAlpha.text = "$pct%"
+            prefs.edit().putInt("alpha_pct", pct).apply()
         })
 
-        sbPadding.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                tvPadding.text = "Distanza dai bordi laterali: $progress dp"
-                prefs.edit().putFloat("edge_padding", progress.toFloat()).apply(); updateService()
-            }
-            override fun onStartTrackingTouch(p0: SeekBar?) {}
-            override fun onStopTrackingTouch(p0: SeekBar?) {}
+        sbThickness.setOnSeekBarChangeListener(onSeekChanged { progress ->
+            val dp = progress + 1
+            tvThickness.text = "$dp dp"
+            prefs.edit().putFloat("stroke_width", dp.toFloat()).apply()
         })
 
-        sbAlpha.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                val pct = progress.coerceAtLeast(10)
-                tvAlpha.text = "Trasparenza: $pct%"
-                prefs.edit().putInt("alpha_pct", pct).apply(); updateService()
-            }
-            override fun onStartTrackingTouch(p0: SeekBar?) {}
-            override fun onStopTrackingTouch(p0: SeekBar?) {}
+        sbPadding.setOnSeekBarChangeListener(onSeekChanged { progress ->
+            tvPadding.text = "$progress dp"
+            prefs.edit().putFloat("edge_padding", progress.toFloat()).apply()
         })
 
-        val toggleListener = { buttonView: CompoundButton, isChecked: Boolean ->
-            when (buttonView.id) {
-                R.id.switchTopBar -> prefs.edit().putBoolean("show_top", isChecked).apply()
-                R.id.switchLeftBar -> prefs.edit().putBoolean("show_left", isChecked).apply()
-                R.id.switchRightBar -> prefs.edit().putBoolean("show_right", isChecked).apply()
-                R.id.switchAnimation -> prefs.edit().putBoolean("anim_enabled", isChecked).apply()
-                R.id.switchWave -> prefs.edit().putBoolean("wave_enabled", isChecked).apply()
-                R.id.switchPulse -> prefs.edit().putBoolean("pulse_enabled", isChecked).apply()
-                R.id.switchHideFull -> prefs.edit().putBoolean("hide_full_enabled", isChecked).apply()
-            }
-            updateService()
+        switchTopBar.setOnCheckedChangeListener { _, isChecked ->
+            layoutTopMode.visibility = if (isChecked) View.VISIBLE else View.GONE
+            prefs.edit().putBoolean("show_top", isChecked).apply()
         }
 
-        switchTopBar.setOnCheckedChangeListener(toggleListener)
-        switchLeftBar.setOnCheckedChangeListener(toggleListener)
-        switchRightBar.setOnCheckedChangeListener(toggleListener)
-        switchAnim.setOnCheckedChangeListener(toggleListener)
-        switchWave.setOnCheckedChangeListener(toggleListener)
-        switchPulse.setOnCheckedChangeListener(toggleListener)
-        switchHideFull.setOnCheckedChangeListener(toggleListener)
+        switchLeftBar.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("show_left", isChecked).apply()
+        }
+
+        switchRightBar.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("show_right", isChecked).apply()
+        }
+
+        switchWave.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("wave_enabled", isChecked).apply()
+        }
+
+        switchAnim.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("anim_enabled", isChecked).apply()
+        }
+
+        switchPulse.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("pulse_enabled", isChecked).apply()
+        }
+
+        switchHideFull.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("hide_full_enabled", isChecked).apply()
+        }
 
         btnToggleService.setOnClickListener {
             if (!Settings.canDrawOverlays(this)) {
-                Toast.makeText(this, "Concedi prima il permesso!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Concedi prima il permesso di sovraimpressione", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            if (!isServiceRunning) {
-                startOverlayService()
-                btnToggleService.text = "Stop Sovraimpressione"
-                isServiceRunning = true
+
+            val serviceIntent = Intent(this, OverlayService::class.java)
+            if (!OverlayService.isRunning) {
+                ContextCompat.startForegroundService(this, serviceIntent)
+                updateServiceUi(running = true)
             } else {
-                stopService(Intent(this, OverlayService::class.java))
-                btnToggleService.text = "Avvia Sovraimpressione"
-                isServiceRunning = false
+                stopService(serviceIntent)
+                updateServiceUi(running = false)
             }
         }
     }
 
-    private fun startOverlayService() {
-        val density = resources.displayMetrics.density
-        val prefs = getSharedPreferences("battery_glass_prefs", Context.MODE_PRIVATE)
-        val alphaPct = prefs.getInt("alpha_pct", 100)
-        val alpha255 = (alphaPct * 255) / 100
-
-        val intent = Intent(this, OverlayService::class.java).apply {
-            putExtra("STROKE_WIDTH", prefs.getFloat("stroke_width", 1f) * density)
-            putExtra("EDGE_PADDING", prefs.getFloat("edge_padding", 0f) * density)
-            putExtra("ALPHA", alpha255)
-            putExtra("SHOW_TOP", prefs.getBoolean("show_top", true))
-            putExtra("TOP_BAR_MODE", prefs.getInt("top_bar_mode", 0))
-            putExtra("SHOW_LEFT", prefs.getBoolean("show_left", true))
-            putExtra("SHOW_RIGHT", prefs.getBoolean("show_right", true))
-            putExtra("PALETTE", prefs.getInt("palette", 0))
-            putExtra("ANIM_ENABLED", prefs.getBoolean("anim_enabled", true))
-            putExtra("WAVE_ENABLED", prefs.getBoolean("wave_enabled", true))
-            putExtra("PULSE_ENABLED", prefs.getBoolean("pulse_enabled", true))
-            putExtra("HIDE_FULL", prefs.getBoolean("hide_full_enabled", false))
-        }
-        startForegroundService(intent)
+    override fun onResume() {
+        super.onResume()
+        val hasPermission = Settings.canDrawOverlays(this)
+        cardPermission.visibility = if (hasPermission) View.GONE else View.VISIBLE
+        updateServiceUi(OverlayService.isRunning)
     }
 
-    private fun updateService() {
-        if (isServiceRunning) startOverlayService()
+    private fun updateServiceUi(running: Boolean) {
+        val batteryPct = readCurrentBatteryPct()
+        val stateLabel = if (running) "Overlay attivo" else "Overlay spento"
+        tvStatusSubtitle.text = "$stateLabel • Batteria $batteryPct%"
+        btnToggleService.text = if (running) "Ferma Sovraimpressione" else "Avvia Sovraimpressione"
+    }
+
+    private fun readCurrentBatteryPct(): Int {
+        val batteryStatus = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val level = batteryStatus?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
+        val scale = batteryStatus?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
+        return if (level >= 0 && scale > 0) ((level * 100f) / scale).toInt() else 100
+    }
+
+    private fun onItemSelected(action: (Int) -> Unit) = object : AdapterView.OnItemSelectedListener {
+        override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) = action(position)
+        override fun onNothingSelected(parent: AdapterView<*>?) {}
+    }
+
+    private fun onSeekChanged(action: (Int) -> Unit) = object : SeekBar.OnSeekBarChangeListener {
+        override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+            if (fromUser) action(progress)
+        }
+        override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+        override fun onStopTrackingTouch(seekBar: SeekBar?) {}
     }
 }
