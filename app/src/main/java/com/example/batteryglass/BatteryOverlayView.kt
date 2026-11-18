@@ -45,6 +45,12 @@ class BatteryOverlayView(context: Context) : View(context) {
     var hideOnFullEnabled: Boolean = false
         set(value) { field = value; updateAnimators(); invalidate() }
 
+    var tickIntervalPct: Int = 10 // 0 = linea continua, altrimenti ogni X%
+        set(value) { field = value.coerceIn(0, 50); invalidate() }
+
+    var tickGapPx: Float = 3f
+        set(value) { field = value.coerceAtLeast(1f); invalidate() }
+
     var isScreenOn: Boolean = true
         set(value) { field = value; updateAnimators() }
 
@@ -107,6 +113,8 @@ class BatteryOverlayView(context: Context) : View(context) {
         waveEnabled = prefs.getBoolean("wave_enabled", true)
         lowBatteryPulseEnabled = prefs.getBoolean("pulse_enabled", true)
         hideOnFullEnabled = prefs.getBoolean("hide_full_enabled", false)
+        tickIntervalPct = prefs.getInt("tick_interval_pct", 10).coerceIn(0, 50)
+        tickGapPx = prefs.getFloat("tick_gap_dp", 3f).coerceAtLeast(1f) * density
     }
 
     override fun onAttachedToWindow() {
@@ -243,6 +251,7 @@ class BatteryOverlayView(context: Context) : View(context) {
     override fun onDraw(canvas: Canvas) {
         if (isHiddenByFullCharge()) return
         if (!showLeft && !showRight && !showTop) return
+        if (batteryLevel <= 0) return
 
         var currentAlpha = if (isCharging && animEnabled) pulseAlpha else 255
         if (batteryLevel <= 15 && !isCharging && lowBatteryPulseEnabled) {
@@ -251,42 +260,92 @@ class BatteryOverlayView(context: Context) : View(context) {
 
         paint.color = getBatteryColor(batteryLevel)
         paint.alpha = ((currentAlpha * userAlpha) / 255).coerceIn(0, 255)
+        // Taglio netto sulle interruzioni così lo spazio vuoto è sempre preciso
+        paint.strokeCap = if (tickIntervalPct > 0) Paint.Cap.BUTT else Paint.Cap.ROUND
 
         val h = height.toFloat()
         val w = width.toFloat()
-        val pct = batteryLevel / 100f
-        val fillHeight = h * pct
-        val stopY = h - fillHeight
         val halfStroke = strokeWidthPx / 2f
         val xLeft = halfStroke + edgePaddingPx
         val xRight = w - halfStroke - edgePaddingPx
         val topY = halfStroke
         val waveAmplitude = (strokeWidthPx * 0.4f).coerceAtLeast(2f)
 
-        if (showLeft && fillHeight > 1f) {
-            drawVerticalBar(canvas, xLeft, h, stopY, phaseOffset = 0f, waveAmplitude)
+        if (showLeft) {
+            forEachBatterySegment(h) { startDist, endDist ->
+                drawVerticalBar(canvas, xLeft, h - startDist, h - endDist, phaseOffset = 0f, waveAmplitude)
+            }
         }
 
-        if (showRight && fillHeight > 1f) {
-            drawVerticalBar(canvas, xRight, h, stopY, phaseOffset = 2f, waveAmplitude)
+        if (showRight) {
+            forEachBatterySegment(h) { startDist, endDist ->
+                drawVerticalBar(canvas, xRight, h - startDist, h - endDist, phaseOffset = 2f, waveAmplitude)
+            }
         }
 
-        if (showTop && pct > 0f) {
+        if (showTop) {
             val totalW = (xRight - xLeft).coerceAtLeast(0f)
             val centerX = xLeft + totalW / 2f
+            val halfW = totalW / 2f
+
             when (topBarMode) {
-                0 -> drawTopSegment(canvas, xLeft, xLeft + totalW * pct, topY, waveAmplitude)
-                1 -> drawTopSegment(canvas, xRight - totalW * pct, xRight, topY, waveAmplitude)
-                2 -> {
-                    val halfW = (totalW * pct) / 2f
-                    drawTopSegment(canvas, centerX - halfW, centerX + halfW, topY, waveAmplitude)
+                0 -> { // Sinistra -> Destra
+                    forEachBatterySegment(totalW) { startDist, endDist ->
+                        drawTopSegment(canvas, xLeft + startDist, xLeft + endDist, topY, waveAmplitude)
+                    }
                 }
-                3 -> {
-                    val emptyHalfW = (totalW * (1f - pct)) / 2f
-                    drawTopSegment(canvas, xLeft, centerX - emptyHalfW, topY, waveAmplitude)
-                    drawTopSegment(canvas, centerX + emptyHalfW, xRight, topY, waveAmplitude)
+                1 -> { // Destra -> Sinistra
+                    forEachBatterySegment(totalW) { startDist, endDist ->
+                        drawTopSegment(canvas, xRight - endDist, xRight - startDist, topY, waveAmplitude)
+                    }
+                }
+                2 -> { // Centro -> Esterni
+                    forEachBatterySegment(halfW) { startDist, endDist ->
+                        drawTopSegment(canvas, centerX + startDist, centerX + endDist, topY, waveAmplitude)
+                        drawTopSegment(canvas, centerX - endDist, centerX - startDist, topY, waveAmplitude)
+                    }
+                }
+                3 -> { // Buco Nero (Erosione dal centro verso l'esterno)
+                    forEachBatterySegment(halfW) { startDist, endDist ->
+                        drawTopSegment(canvas, xLeft + startDist, xLeft + endDist, topY, waveAmplitude)
+                        drawTopSegment(canvas, xRight - endDist, xRight - startDist, topY, waveAmplitude)
+                    }
                 }
             }
+        }
+    }
+
+    private inline fun forEachBatterySegment(
+        totalLengthPx: Float,
+        onSegment: (startDist: Float, endDist: Float) -> Unit
+    ) {
+        if (totalLengthPx <= 1f || batteryLevel <= 0) return
+
+        if (tickIntervalPct <= 0) {
+            onSegment(0f, totalLengthPx * (batteryLevel / 100f))
+            return
+        }
+
+        val step = tickIntervalPct
+        val fullIntervalPx = totalLengthPx * (step / 100f)
+        // Garantisce che ogni tacca piena mantenga almeno 1.5px visibili anche con gap larghi
+        val maxAllowedGap = (fullIntervalPx - 1.5f).coerceAtLeast(0f)
+        val effectiveGap = tickGapPx.coerceAtMost(maxAllowedGap)
+        val halfGap = effectiveGap / 2f
+
+        var currentPct = 0
+        while (currentPct < batteryLevel) {
+            val nextPct = (currentPct + step).coerceAtMost(batteryLevel)
+            var startDist = totalLengthPx * (currentPct / 100f)
+            var endDist = totalLengthPx * (nextPct / 100f)
+
+            if (currentPct > 0) startDist += halfGap
+            if (nextPct < 100 && nextPct == currentPct + step) endDist -= halfGap
+
+            if (endDist - startDist > 0.5f) {
+                onSegment(startDist, endDist)
+            }
+            currentPct += step
         }
     }
 
@@ -298,6 +357,7 @@ class BatteryOverlayView(context: Context) : View(context) {
         phaseOffset: Float,
         amplitude: Float
     ) {
+        if (startY - stopY <= 0.5f) return
         if (waveEnabled && (startY - stopY) > 14f) {
             wavePath.reset()
             wavePath.moveTo(x, startY)
@@ -322,7 +382,7 @@ class BatteryOverlayView(context: Context) : View(context) {
         topY: Float,
         amplitude: Float
     ) {
-        if (stopX - startX < 1f) return
+        if (stopX - startX <= 0.5f) return
         if (waveEnabled && (stopX - startX) > 14f) {
             wavePath.reset()
             wavePath.moveTo(startX, topY)
