@@ -52,16 +52,18 @@ class MainActivity : AppCompatActivity() {
         val spinnerPalette = findViewById<Spinner>(R.id.spinnerPalette)
         val tvAlpha = findViewById<TextView>(R.id.tvAlpha)
         val sbAlpha = findViewById<SeekBar>(R.id.sbAlpha)
+
+        val tvTickInterval = findViewById<TextView>(R.id.tvTickInterval)
+        val sbTickInterval = findViewById<SeekBar>(R.id.sbTickInterval)
+        val layoutTickOptions = findViewById<View>(R.id.layoutTickOptions)
+        val tvTickGap = findViewById<TextView>(R.id.tvTickGap)
+        val sbTickGap = findViewById<SeekBar>(R.id.sbTickGap)
+        val spinnerErosionMode = findViewById<Spinner>(R.id.spinnerErosionMode)
+
         val tvThickness = findViewById<TextView>(R.id.tvThickness)
         val sbThickness = findViewById<SeekBar>(R.id.sbThickness)
         val tvPadding = findViewById<TextView>(R.id.tvPadding)
         val sbPadding = findViewById<SeekBar>(R.id.sbPadding)
-
-        val tvTickInterval = findViewById<TextView>(R.id.tvTickInterval)
-        val sbTickInterval = findViewById<SeekBar>(R.id.sbTickInterval)
-        val layoutTickGap = findViewById<View>(R.id.layoutTickGap)
-        val tvTickGap = findViewById<TextView>(R.id.tvTickGap)
-        val sbTickGap = findViewById<SeekBar>(R.id.sbTickGap)
 
         val switchTopBar = findViewById<SwitchMaterial>(R.id.switchTopBar)
         val layoutTopMode = findViewById<View>(R.id.layoutTopMode)
@@ -83,6 +85,16 @@ class MainActivity : AppCompatActivity() {
         spinnerPalette.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, palettes)
         spinnerPalette.setSelection(prefs.getInt("palette", 0).coerceIn(0, palettes.lastIndex))
 
+        val erosionModes = arrayOf(
+            "Nero → Bianco (si schiarisce consumandosi)",
+            "Bianco → Nero (si scurisce consumandosi)",
+            "Colore barra → Bianco",
+            "Colore barra → Nero",
+            "Disattivata (stesso colore della barra)"
+        )
+        spinnerErosionMode.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, erosionModes)
+        spinnerErosionMode.setSelection(prefs.getInt("erosion_mode", 0).coerceIn(0, erosionModes.lastIndex))
+
         val topModes = arrayOf(
             "Sinistra → Destra",
             "Destra → Sinistra",
@@ -96,6 +108,17 @@ class MainActivity : AppCompatActivity() {
         sbAlpha.progress = savedAlpha - 10
         tvAlpha.text = "$savedAlpha%"
 
+        val savedInterval = prefs.getInt("tick_interval_pct", 10)
+        val intervalIndex = tickIntervals.indexOf(savedInterval).let { if (it >= 0) it else 5 }
+        sbTickInterval.max = tickIntervals.lastIndex
+        sbTickInterval.progress = intervalIndex
+        tvTickInterval.text = tickIntervalLabels[intervalIndex]
+        layoutTickOptions.visibility = if (tickIntervals[intervalIndex] > 0) View.VISIBLE else View.GONE
+
+        val savedGap = prefs.getFloat("tick_gap_dp", 3f).toInt().coerceIn(1, 20)
+        sbTickGap.progress = savedGap - 1
+        tvTickGap.text = "$savedGap dp"
+
         val savedThickness = prefs.getFloat("stroke_width", 2f).toInt().coerceIn(1, 50)
         sbThickness.progress = savedThickness - 1
         tvThickness.text = "$savedThickness dp"
@@ -103,17 +126,6 @@ class MainActivity : AppCompatActivity() {
         val savedPadding = prefs.getFloat("edge_padding", 0f).toInt().coerceIn(0, 100)
         sbPadding.progress = savedPadding
         tvPadding.text = "$savedPadding dp"
-
-        val savedInterval = prefs.getInt("tick_interval_pct", 10)
-        val intervalIndex = tickIntervals.indexOf(savedInterval).let { if (it >= 0) it else 5 }
-        sbTickInterval.max = tickIntervals.lastIndex
-        sbTickInterval.progress = intervalIndex
-        tvTickInterval.text = tickIntervalLabels[intervalIndex]
-        layoutTickGap.visibility = if (tickIntervals[intervalIndex] > 0) View.VISIBLE else View.GONE
-
-        val savedGap = prefs.getFloat("tick_gap_dp", 3f).toInt().coerceIn(1, 15)
-        sbTickGap.progress = savedGap - 1
-        tvTickGap.text = "$savedGap dp"
 
         val showTop = prefs.getBoolean("show_top", true)
         switchTopBar.isChecked = showTop
@@ -138,6 +150,10 @@ class MainActivity : AppCompatActivity() {
             prefs.edit().putInt("palette", pos).apply()
         }
 
+        spinnerErosionMode.onItemSelectedListener = onItemSelected { pos ->
+            prefs.edit().putInt("erosion_mode", pos).apply()
+        }
+
         spinnerTopMode.onItemSelectedListener = onItemSelected { pos ->
             prefs.edit().putInt("top_bar_mode", pos).apply()
         }
@@ -146,6 +162,20 @@ class MainActivity : AppCompatActivity() {
             val pct = progress + 10
             tvAlpha.text = "$pct%"
             prefs.edit().putInt("alpha_pct", pct).apply()
+        })
+
+        sbTickInterval.setOnSeekBarChangeListener(onSeekChanged { progress ->
+            val idx = progress.coerceIn(0, tickIntervals.lastIndex)
+            val intervalPct = tickIntervals[idx]
+            tvTickInterval.text = tickIntervalLabels[idx]
+            layoutTickOptions.visibility = if (intervalPct > 0) View.VISIBLE else View.GONE
+            prefs.edit().putInt("tick_interval_pct", intervalPct).apply()
+        })
+
+        sbTickGap.setOnSeekBarChangeListener(onSeekChanged { progress ->
+            val dp = progress + 1
+            tvTickGap.text = "$dp dp"
+            prefs.edit().putFloat("tick_gap_dp", dp.toFloat()).apply()
         })
 
         sbThickness.setOnSeekBarChangeListener(onSeekChanged { progress ->
@@ -157,20 +187,6 @@ class MainActivity : AppCompatActivity() {
         sbPadding.setOnSeekBarChangeListener(onSeekChanged { progress ->
             tvPadding.text = "$progress dp"
             prefs.edit().putFloat("edge_padding", progress.toFloat()).apply()
-        })
-
-        sbTickInterval.setOnSeekBarChangeListener(onSeekChanged { progress ->
-            val idx = progress.coerceIn(0, tickIntervals.lastIndex)
-            val intervalPct = tickIntervals[idx]
-            tvTickInterval.text = tickIntervalLabels[idx]
-            layoutTickGap.visibility = if (intervalPct > 0) View.VISIBLE else View.GONE
-            prefs.edit().putInt("tick_interval_pct", intervalPct).apply()
-        })
-
-        sbTickGap.setOnSeekBarChangeListener(onSeekChanged { progress ->
-            val dp = progress + 1
-            tvTickGap.text = "$dp dp"
-            prefs.edit().putFloat("tick_gap_dp", dp.toFloat()).apply()
         })
 
         switchTopBar.setOnCheckedChangeListener { _, isChecked ->
